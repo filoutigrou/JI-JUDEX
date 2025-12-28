@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-let maintenanceMode = false;
+let maintenanceMode = true;
 
 function formatUptime(seconds) {
   const h = Math.floor(seconds / 3600);
