@@ -39,7 +39,7 @@ const CONFIG = {
                 { id: 'identite', label: 'Nom/Prénom RP', style: TextInputStyle.Short },
                 { id: 'grade_actuel', label: 'Grade/Poste Actuel', style: TextInputStyle.Short },
                 { id: 'demande', label: 'Accréditation demandée', style: TextInputStyle.Short },
-                { id: 'motif', label: 'Motivations', style: TextInputStyle.Paragraph }
+                { id: 'motif', label: 'Preuves (image...)', style: TextInputStyle.Short }
             ]
         },
         'rdv': {

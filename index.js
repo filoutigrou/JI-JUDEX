@@ -27,6 +27,8 @@ const listeAbs = require('./listeabs');
 const joinCommand = require('./join.js');
 const reminder = require('./reminder.js');
 const ticket = require('./ticket.js'); // Module ticket
+const serviceCommand = require('./service.js'); // NOUVEAU : Module service (pointeuse)
+
 require('dotenv').config();
 
 const client = new Client({
@@ -39,24 +41,28 @@ const client = new Client({
 });
 
 const Creator = ['858590105362628656'];
-const présidenceID = ['1453845787791589591'];
-const directionID = ['1421216809054371962'];
-const delegationID = ['1421216821142618253'];
+const administrationID = ['1452256490395140237'];
+const personnelID = ['1452256494153105571'];
+const hautconseilID = ['1452256444048081009'];
+const directionID = ['1452256438780170252']
 
 function isCreator(interaction) {
   return Creator.includes(interaction.user.id);
 }
-function présidence(interaction) {
-  return (isCreator(interaction) || interaction.member.roles.cache.some(role => présidenceID.includes(role.id)));
+function administration(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => administrationID.includes(role.id)));
+}
+function personnel(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => personnelID.includes(role.id)));
+}
+function hautconseil(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => hautconseilID.includes(role.id)));
 }
 function direction(interaction) {
   return (isCreator(interaction) || interaction.member.roles.cache.some(role => directionID.includes(role.id)));
 }
-function delegation(interaction) {
-  return (isCreator(interaction) || interaction.member.roles.cache.some(role => delegationID.includes(role.id)));
-}
-function two(interaction) {
-  return (isCreator(interaction) || présidence(interaction) || direction(interaction));
+function three(interaction) {
+  return (isCreator(interaction) || administration(interaction) || hautconseil(interaction) || direction(interaction));
 }
 function all(interaction) {
   return (isCreator(interaction) || présidence(interaction) || direction(interaction) || delegation(interaction));
@@ -83,12 +89,6 @@ const commands = [
     .setName('deepwell')
     .setDescription('Archivage SCI.PNET'),
   new SlashCommandBuilder()
-    .setName('pds')
-    .setDescription('Prise de service'),
-  new SlashCommandBuilder()
-    .setName('fds')
-    .setDescription('Fin de service'),
-  new SlashCommandBuilder()
     .setName('embed')
     .setDescription('Créer un embed via formulaire')
     .addChannelOption(opt => opt.setName('salon').setDescription('Salon destination').setRequired(true)),
@@ -103,7 +103,8 @@ const commands = [
     supprSanctionCommand.data,
     absencesCommand.data,
     listeAbs.data,
-    ticket.data 
+    ticket.data,
+    serviceCommand.data // Ajout de la commande /pointeuse
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -127,32 +128,28 @@ client.on('interactionCreate', async interaction => {
   if (interaction.isChatInputCommand()) {
     const { commandName } = interaction;
 
-    // --- GESTION TICKET AVEC PERMISSIONS SÉPARÉES ---
+    // --- GESTION POINTEUSE (PANEL) ---
+    if (commandName === 'pointeuse') {
+        if (!administration(interaction)) return interaction.reply({ content: '🚫 Réservé à l\'administration.', ephemeral: true });
+        await serviceCommand.execute(interaction);
+    }
+
+    // --- GESTION TICKET ---
     if (commandName === 'ticket') {
         const subCommand = interaction.options.getSubcommand();
-
-        // 1. PANEL : Réservé à la Présidence (Configuration)
         if (subCommand === 'panel') {
-            if (!présidence(interaction)) {
-                return interaction.reply({ content: '🚫 Seule la Présidence peut configurer les panels.', ephemeral: true });
+            if (!administration(interaction)) { // Modifié pour utiliser tes fonctions
+                return interaction.reply({ content: '🚫 Seule l\'administration peut configurer les panels.', ephemeral: true });
             }
-        }
-        
-        // 2. DELETE : Réservé à la Direction+ (Suppression définitive)
-        else if (subCommand === 'delete') {
+        } else if (subCommand === 'delete') {
             if (!two(interaction)) {
                 return interaction.reply({ content: '🚫 Seule la Direction peut supprimer définitivement un ticket.', ephemeral: true });
             }
-        }
-
-        // 3. AUTRES (Claim, Close, Add, Remove) : Réservé à tout le Staff
-        else {
+        } else {
             if (!all(interaction)) {
                 return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
             }
         }
-
-        // Si la permission est OK, on exécute
         await ticket.execute(interaction);
         return;
     }
@@ -184,36 +181,24 @@ client.on('interactionCreate', async interaction => {
 
     if (commandName === 'deepwell') {
       if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
-      const embed = new EmbedBuilder().setTitle('📁 Archivage SCI.PNET').setDescription('***⚠️ Enregistré dans les bases SCI.PNET. Suppression interdite. ⚠️***').setColor(0xFFFFFF).setFooter({ text: 'JI - JUDEX', iconURL: client.user.displayAvatarURL() }).setTimestamp();
+      const embed = new EmbedBuilder().setTitle('📁 Archivage dans les serveurs SCI.PNET - Justice').setDescription('***⚠️ Cette communication a été automatiquement enregistrée dans les bases de données sécurisées de SCI.PNET sous la supervision de la Justice. Toute tentative de suppression ou d’altération est strictement interdite. ⚠️***').setColor(0xFFFFFF).setFooter({ text: 'JI - JUDEX', iconURL: client.user.displayAvatarURL() }).setTimestamp();
       return interaction.reply({ embeds: [embed] });
     }
 
-    if (commandName === 'archive') { if (all(interaction)) await archiveCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
+    if (commandName === 'archive') { if (three(interaction)) await archiveCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
     if (commandName === 'recap') { if (all(interaction)) await recapCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
     
-    if (commandName === 'pds') {
-      if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
-      listeCommand.ajouterPDS(interaction.user.tag);
-      const embed = new EmbedBuilder().setTitle('🟢 Prise de service').setDescription(`**${interaction.user} a commencé sa PDS.**`).setColor(0x00cc66).setTimestamp();
-      return interaction.reply({ embeds: [embed] });
-    }
+    // ANCIENNES COMMANDES PDS/FDS SUPPRIMEES D'ICI car remplacées par les boutons
 
-    if (commandName === 'fds') {
-      if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
-      listeCommand.ajouterFDS(interaction.user.tag);
-      const embed = new EmbedBuilder().setTitle('🔴 Fin de service').setDescription(`**${interaction.user} a terminé sa FDS.**`).setColor(0xcc0000).setTimestamp();
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    if (commandName === 'deletearchive') { if (présidence(interaction)) await suparchCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Présidence.', ephemeral: true }); }
+    if (commandName === 'deletearchive') { if (administration(interaction)) await suparchCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true }); }
     if (commandName === 'liste') { if (two(interaction)) await listeCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
-    if (commandName === 'blackout') { if (présidence(interaction)) await blackoutCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Présidence.', ephemeral: true }); }
+    if (commandName === 'blackout') { if (administration(interaction)) await blackoutCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true }); }
     if (commandName === 'sanctionrp') { if (all(interaction)) await sanctionRPCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
     if (commandName === 'recapsanctions') { if (two(interaction)) await recapSanctionsCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     if (commandName === 'supprsanction') { if (two(interaction)) await supprSanctionCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     
     if (commandName === 'embed') {
-      if (!présidence(interaction)) return interaction.reply({ content: '🚫 Réservé Présidence.', ephemeral: true });
+      if (!administration(interaction)) return interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true });
       const salon = interaction.options.getChannel('salon');
       if (salon.type !== ChannelType.GuildText) return interaction.reply({ content: "Salon textuel requis.", ephemeral: true });
       
@@ -227,15 +212,50 @@ client.on('interactionCreate', async interaction => {
       return await interaction.showModal(modal);
     }
 
-    if (commandName === 'absences') { if (all(interaction)) await absencesCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
+    if (commandName === 'absences') { if (personnel(interaction)) await absencesCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
     if (commandName === 'listeabs') { if (two(interaction)) await listeAbs.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
   }
 
   // ==========================================
-  //        BOUTONS (Tickets + Autres)
+  //        BOUTONS (Tickets + PDS/FDS)
   // ==========================================
   if (interaction.isButton()) {
-      await ticket.handleButtons(interaction);
+      // 1. Boutons Tickets
+      if (interaction.customId.startsWith('open_ticket_') || 
+          ['btn_claim_ticket', 'btn_close_ticket', 'btn_delete_ticket'].includes(interaction.customId)) {
+          await ticket.handleButtons(interaction);
+          return;
+      }
+
+      // 2. Boutons Service (Pointeuse)
+      if (interaction.customId === 'btn_pds') {
+          if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+          
+          await listeCommand.ajouterPDS(interaction.user.tag);
+          
+          const embed = new EmbedBuilder()
+              .setTitle('🟢 Prise de service')
+              .setDescription(`**${interaction.user} a commencé sa PDS.**`)
+              .setColor(0x00cc66)
+              .setTimestamp();
+          
+          // Ephemeral: true pour ne pas spammer le salon du panel
+          return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
+
+      if (interaction.customId === 'btn_fds') {
+          if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+          
+          await listeCommand.ajouterFDS(interaction.user.tag);
+          
+          const embed = new EmbedBuilder()
+              .setTitle('🔴 Fin de service')
+              .setDescription(`**${interaction.user} a terminé sa FDS.**`)
+              .setColor(0xcc0000)
+              .setTimestamp();
+          
+          return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
   }
 
   // ==========================================
@@ -247,11 +267,11 @@ client.on('interactionCreate', async interaction => {
   }
 
   // ==========================================
-  //        GESTION DES MODALS (COMPLET)
+  //        GESTION DES MODALS
   // ==========================================
   if (interaction.isModalSubmit()) {
     
-    // 1. Modals Tickets (NOUVEAU)
+    // 1. Modals Tickets
     if (interaction.customId.startsWith('modal_ticket_')) {
         await ticket.handleModals(interaction);
         return; 
