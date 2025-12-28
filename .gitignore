@@ -1,0 +1,11 @@
+# Environnement
+.env
+sanction rp.txt
+
+# VS Code
+.vscode/
+
+
+# Systèmes
+.DS_Store
+Thumbs.db
