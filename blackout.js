@@ -46,7 +46,7 @@ module.exports = {
           inline: false
         }
       )
-      .setFooter({ text: 'BLACKOUT STATUS SYSTEM • NODE-E', iconURL: interaction.client.user.displayAvatarURL() })
+      .setFooter({ text: 'BLACKOUT STATUS SYSTEM • JI-JUDEX', iconURL: interaction.client.user.displayAvatarURL() })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed], ephemeral: true });

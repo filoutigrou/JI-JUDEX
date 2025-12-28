@@ -7,7 +7,7 @@ const DATA_FILE = path.join(__dirname, 'pds_fds.json');
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = 'filoutigrou';
-const REPO = 'NODE-E';
+const REPO = 'JI-JUDEX';
 const FILE_PATH = 'pds_fds.json';
 const BRANCH = 'main';
 

@@ -10,7 +10,7 @@ const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 const owner = 'filoutigrou';
-const repo = 'NODE-E';
+const repo = 'JI-JUDEX';
 const branch = 'main'; // ou la branche par défaut
 
 module.exports = {

@@ -14,7 +14,7 @@ const axios = require('axios');
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 const owner = 'filoutigrou';
-const repo = 'NODE-E';
+const repo = 'JI-JUDEX';
 
 const SANCTIONS_DIR = path.join(__dirname, 'sanctions');
 if (!fs.existsSync(SANCTIONS_DIR)) fs.mkdirSync(SANCTIONS_DIR);

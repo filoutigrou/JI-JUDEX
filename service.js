@@ -12,7 +12,7 @@ module.exports = {
             .setTitle('🕰️ Gestion de Service')
             .setDescription('Veuillez indiquer votre statut en cliquant sur les boutons ci-dessous.\n\n🟢 **Prise de Service** : Début de votre activité.\n🔴 **Fin de Service** : Fin de votre activité.')
             .setColor('#2B2D31')
-            .setFooter({ text: 'Système de Pointage • NODE-E' })
+            .setFooter({ text: 'Système de Pointage • JI-JUDEX' })
             .setTimestamp();
 
         const row = new ActionRowBuilder()

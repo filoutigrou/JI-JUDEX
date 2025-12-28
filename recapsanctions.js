@@ -67,7 +67,7 @@ module.exports = {
       // Ajouter une image en thumbnail si dispo
       if (data.images && data.images.length > 0) {
         const imageName = data.images[0];
-        const githubRawURL = `https://raw.githubusercontent.com/filoutigrou/NODE-E/main/sanctions/${imageName}`;
+        const githubRawURL = `https://raw.githubusercontent.com/filoutigrou/JI-JUDEX/main/sanctions/${imageName}`;
         embed.setThumbnail(githubRawURL);
       }
 

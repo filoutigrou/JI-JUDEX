@@ -7,7 +7,7 @@ const octokit = new Octokit({
 
 async function uploadToGitHub({ filePath, content }) {
   const owner = 'filoutigrou';
-  const repo = 'NODE-E';
+  const repo = 'JI-JUDEX';
   const branch = 'main'; // ou la branche par défaut
   const path = `archives/${filePath}`;
   const encodedContent = Buffer.from(content).toString('base64');

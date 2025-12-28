@@ -9,7 +9,7 @@ const { Octokit } = require('@octokit/rest');
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 const owner = 'filoutigrou';
-const repo = 'NODE-E';
+const repo = 'JI-JUDEX';
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -68,8 +68,8 @@ module.exports = {
         message: `📁 Ajout absence : ${fileName}`,
         content: Buffer.from(JSON.stringify(data, null, 2)).toString('base64'),
         committer: {
-          name: 'NODE-E Bot',
-          email: 'bot@node-e.local'
+          name: 'JI-JUDEX Bot',
+          email: 'bot@ji-judex.local'
         },
         author: {
           name: interaction.user.tag,
