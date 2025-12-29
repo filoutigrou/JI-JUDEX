@@ -28,6 +28,7 @@ const joinCommand = require('./join.js');
 const reminder = require('./reminder.js');
 const ticket = require('./ticket.js'); // Module ticket
 const serviceCommand = require('./service.js'); // NOUVEAU : Module service (pointeuse)
+const permanenceCommand = require('./permanence.js');
 
 require('dotenv').config();
 
@@ -65,7 +66,7 @@ function three(interaction) {
   return (isCreator(interaction) || administration(interaction) || hautconseil(interaction) || direction(interaction));
 }
 function all(interaction) {
-  return (isCreator(interaction) || présidence(interaction) || direction(interaction) || delegation(interaction));
+  return (isCreator(interaction) || direction(interaction) || delegation(interaction));
 }
 
 // Lancer flask.js
@@ -104,7 +105,8 @@ const commands = [
     absencesCommand.data,
     listeAbs.data,
     ticket.data,
-    serviceCommand.data // Ajout de la commande /pointeuse
+    serviceCommand.data,
+    permanenceCommand.data
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -127,6 +129,11 @@ client.on('interactionCreate', async interaction => {
   // ==========================================
   if (interaction.isChatInputCommand()) {
     const { commandName } = interaction;
+
+    if (commandName === 'permanence') {
+        if (!administration(interaction)) return interaction.reply({ content: '🚫 Réservé à l\'administration.', ephemeral: true });
+        await permanenceCommand.execute(interaction);
+    }
 
     // --- GESTION POINTEUSE (PANEL) ---
     if (commandName === 'pointeuse') {
@@ -255,6 +262,14 @@ client.on('interactionCreate', async interaction => {
               .setTimestamp();
           
           return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
+
+      // 3. Boutons Permanence (NOUVEAU)
+      if (interaction.customId === 'btn_prise_perm' || interaction.customId === 'btn_fin_perm') {
+           // Vérification permission (optionnel, sinon tout le monde peut prendre la perm si le bouton est public)
+           if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+           await permanenceCommand.handleButtons(interaction);
+           return;
       }
   }
 
