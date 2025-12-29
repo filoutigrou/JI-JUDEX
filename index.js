@@ -45,7 +45,8 @@ const Creator = ['858590105362628656'];
 const administrationID = ['1452256490395140237'];
 const personnelID = ['1452256494153105571'];
 const hautconseilID = ['1452256444048081009'];
-const directionID = ['1452256438780170252']
+const directionID = ['1452256438780170252'];
+const teamID = ['1452256516240441440']
 
 function isCreator(interaction) {
   return Creator.includes(interaction.user.id);
@@ -61,6 +62,9 @@ function hautconseil(interaction) {
 }
 function direction(interaction) {
   return (isCreator(interaction) || interaction.member.roles.cache.some(role => directionID.includes(role.id)));
+}
+function team(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => teamID.includes(role.id)));
 }
 function three(interaction) {
   return (isCreator(interaction) || administration(interaction) || hautconseil(interaction) || direction(interaction));
@@ -236,7 +240,6 @@ client.on('interactionCreate', async interaction => {
 
       // 2. Boutons Service (Pointeuse)
       if (interaction.customId === 'btn_pds') {
-          if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
           
           await listeCommand.ajouterPDS(interaction.user.tag);
           
@@ -251,7 +254,6 @@ client.on('interactionCreate', async interaction => {
       }
 
       if (interaction.customId === 'btn_fds') {
-          if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
           
           await listeCommand.ajouterFDS(interaction.user.tag);
           
@@ -266,8 +268,6 @@ client.on('interactionCreate', async interaction => {
 
       // 3. Boutons Permanence (NOUVEAU)
       if (interaction.customId === 'btn_prise_perm' || interaction.customId === 'btn_fin_perm') {
-           // Vérification permission (optionnel, sinon tout le monde peut prendre la perm si le bouton est public)
-           if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
            await permanenceCommand.handleButtons(interaction);
            return;
       }
