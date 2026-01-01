@@ -1,0 +1,78 @@
+[2025-12-27 17:48:08] imad_783000 : 
+[2025-12-27 17:48:11] imad_783000 : <@858590105362628656>
+[2025-12-27 20:57:01] JI-Judex#7731 : 
+[2025-12-27 21:10:17] imad_783000 : 
+[2025-12-27 21:10:33] imad_783000 : 
+[2025-12-28 08:26:44] imad_783000 : <@858590105362628656>
+[2025-12-28 11:05:08] JI-Judex#7731 : 
+[2025-12-28 11:06:34] JI-Judex#7731 : 
+[2025-12-28 11:06:38] JI-Judex#7731 : 
+[2025-12-28 11:11:30] filou9818 : <@951539673057095690> dit moi se que tu en pense
+[2025-12-28 11:17:15] filou9818 : <@931957664156635156> toi aussi xD
+[2025-12-28 11:18:57] zaldows : pas mal
+[2025-12-28 12:25:20] imad_783000 : Ouai nickel simple
+[2025-12-28 12:30:48] filou9818 : fais les tickets et tous pour me dire
+[2025-12-28 12:41:04] imad_783000 : 
+[2025-12-28 12:41:09] imad_783000 : Supprime cette colonne
+[2025-12-28 12:41:14] imad_783000 : Il me faut un truc preuve
+[2025-12-28 12:41:19] imad_783000 : Pas important motivation
+[2025-12-28 12:44:36] imad_783000 : <@858590105362628656> j’aime bien il faut juste modifier ce que j’ai dit
+[2025-12-28 12:44:37] imad_783000 : Stp
+[2025-12-28 12:45:16] filou9818 : okk
+[2025-12-28 12:48:43] filou9818 : <@951539673057095690> sa veut dire la cmd /archive et le reste je peux les sup
+[2025-12-28 12:50:12] imad_783000 : 
+[2025-12-28 12:50:44] imad_783000 : 
+[2025-12-28 12:51:07] filou9818 : okk
+[2025-12-28 13:08:15] imad_783000 : / absence  = Personnel du service
+[2025-12-28 13:08:31] imad_783000 : / Archive = Administration du service + Haut conseil judiciaire est la direction General
+[2025-12-28 13:09:42] imad_783000 : / deletearchive = Administration du service.
+[2025-12-28 13:10:11] imad_783000 : / EMBEd = Administration du service
+[2025-12-28 13:10:43] imad_783000 : / recap = Administration du service
+[2025-12-28 13:11:44] imad_783000 : / sanctionsRP = <@&1452256494153105571>
+[2025-12-28 13:12:12] imad_783000 : <@858590105362628656> et voilà si j’ai oublié des truc Ont ferra se soir
+[2025-12-28 13:12:22] imad_783000 : Mais pour l’instant c’est good
+[2025-12-28 13:12:38] redacted38 : ?
+[2025-12-28 13:12:46] imad_783000 : Pas pour toi tkt
+[2025-12-28 13:13:00] imad_783000 : C’est pour le bot
+[2025-12-28 13:28:27] filou9818 : ok
+[2025-12-28 14:06:52] JI-Judex#7731 : 
+[2025-12-28 14:46:23] filou9818 : <@951539673057095690> tu veux aussi les pds & fds dans <#1453848343120969869> ?
+[2025-12-28 16:01:43] imad_783000 : Ouai
+[2025-12-28 16:02:02] imad_783000 : Réécoute les voc
+[2025-12-28 19:15:45] imad_783000 : <@858590105362628656>
+[2025-12-28 19:16:04] imad_783000 : 
+[2025-12-28 21:25:30] filou9818 : elle marche normalement
+[2025-12-28 21:26:46] filou9818 : c'est juste ta pas le role administration des services
+[2025-12-28 21:27:24] filou9818 : et les pds fds marche aussi
+[2025-12-28 21:27:55] filou9818 : tu est enregistré sauf que après les listes enfaite faut que tu me disent chaque cmds par qui elle peut etre utilisé
+[2025-12-28 21:32:32] imad_783000 : Ouai
+[2025-12-29 21:49:07] imad_783000 : <@858590105362628656>
+[2025-12-29 21:49:30] imad_783000 : Le bouton permanence il marche avec le rôle <@&1452256516240441440> ?
+[2025-12-29 21:49:58] filou9818 : oui normalement il marche avec tous le monde qui voit le bouton
+[2025-12-29 21:50:12] imad_783000 : Bizarre
+[2025-12-29 21:50:12] imad_783000 : Att
+[2025-12-29 21:50:19] imad_783000 : Regarde bien tu la mis avec quelle role
+[2025-12-29 21:50:20] imad_783000 : ?
+[2025-12-29 21:50:28] filou9818 : ah
+[2025-12-29 21:50:32] filou9818 : oui je vois mtn
+[2025-12-29 21:50:55] imad_783000 : Ok
+[2025-12-29 21:50:58] imad_783000 : Check ça
+[2025-12-29 21:51:04] imad_783000 : Est aussi les autre PDS
+[2025-12-29 21:51:09] imad_783000 : CEJ et CAC
+[2025-12-29 21:51:50] filou9818 : Ok
+[2025-12-29 21:57:18] filou9818 : voila problème réglé il faut juste que le bots redemarre dcp
+[2025-12-29 21:59:04] filou9818 : voila il a redemarre
+[2026-01-01 09:22:15] imad_783000 : <@858590105362628656> slt filou pour la commande sanction RP tu met le personnel du service
+[2026-01-01 09:22:19] imad_783000 : Stp
+[2026-01-01 09:35:50] imad_783000 : Aussi tu peux mettre en place les Systeme de ticket c’est good
+[2026-01-01 10:05:13] filou9818 : Ok
+[2026-01-01 10:05:17] filou9818 : Ok
+[2026-01-01 10:05:25] filou9818 : Et bonne année
+[2026-01-01 10:12:15] imad_783000 : Merci à toi aussi mon Reuf
+[2026-01-01 13:47:13] imad_783000 : 
+[2026-01-01 13:47:14] imad_783000 : Filou
+[2026-01-01 13:47:25] imad_783000 : Aussi quand ont n'a fini de mettre les infos pour les sanction RP
+[2026-01-01 13:47:37] imad_783000 : il faudrait que si ont met l'image elle soit directement sup
+[2026-01-01 13:47:40] imad_783000 : est enregistrée
+[2026-01-01 13:47:42] imad_783000 : par le bot
+[2026-01-01 13:47:45] imad_783000 : <@858590105362628656>

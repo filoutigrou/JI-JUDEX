@@ -48,7 +48,6 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('sanctionrp')
     .setDescription('Formulaire de sanction RP')
-    // J'ai supprimé l'option "infraction" ici
     .addUserOption(option =>
       option.setName('membre')
         .setDescription('Membre sanctionné (Facultatif)')
@@ -57,11 +56,7 @@ module.exports = {
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('membre');
-
-    // On prépare l'ID pour le modal. Si pas de targetUser, on met une chaine vide.
     const targetUserId = targetUser ? targetUser.id : '';
-    
-    // Structure simplifiée : sanctionrp_modal|USER_ID (plus besoin de passer l'infraction ici)
     const modalCustomId = `sanctionrp_modal|${targetUserId}`;
 
     const modal = new ModalBuilder()
@@ -72,8 +67,7 @@ module.exports = {
       { id: 'pseudo', label: 'Pseudo Roblox', style: TextInputStyle.Short },
       { id: 'identite', label: 'Identité RP (Nom, Prénom, Naissance)', style: TextInputStyle.Paragraph },
       { id: 'age', label: 'Âge', style: TextInputStyle.Short },
-      // Ici j'ai remplacé l'ID 'grade' par 'infraction' pour que ce soit logique dans le code
-      { id: 'infraction', label: 'Infraction RP', style: TextInputStyle.Paragraph }, 
+      { id: 'infraction', label: 'Infraction RP', style: TextInputStyle.Paragraph },
       { id: 'departement', label: 'Département du concerné', style: TextInputStyle.Short },
     ];
 
@@ -94,19 +88,17 @@ module.exports = {
   async handleModalSubmit(interaction) {
     if (!interaction.customId.startsWith('sanctionrp_modal')) return;
 
-    // Récupération de l'ID utilisateur depuis le customId du modal
     const [, targetUserId] = interaction.customId.split('|');
     
     let pseudoDiscord = 'Non spécifié';
 
-    // On cherche le membre seulement si un ID a été passé dans le modal
     if (targetUserId && targetUserId !== '' && interaction.guild) {
       try {
         const member = await interaction.guild.members.fetch(targetUserId);
         pseudoDiscord = member.user.tag;
       } catch (error) {
         console.error('Impossible de récupérer le membre ciblé:', error);
-        pseudoDiscord = targetUserId; // Fallback sur l'ID si erreur
+        pseudoDiscord = targetUserId;
       }
     }
 
@@ -117,7 +109,6 @@ module.exports = {
       pseudo: interaction.fields.getTextInputValue('pseudo'),
       identite: interaction.fields.getTextInputValue('identite'),
       age: interaction.fields.getTextInputValue('age'),
-      // On récupère maintenant l'infraction depuis le champ du modal
       infraction: interaction.fields.getTextInputValue('infraction'),
       departement: interaction.fields.getTextInputValue('departement'),
       date: new Date().toISOString(),
@@ -125,11 +116,9 @@ module.exports = {
     };
 
     const safePseudo = values.pseudo.replace(/[^a-z0-9_-]/gi, '_');
-    // Si personneDiscord contient des caractères spéciaux ou espaces, on nettoie pour le nom de fichier
     const safeDiscord = pseudoDiscord.replace(/[^a-z0-9_-]/gi, '_');
     const timestamp = Date.now();
     
-    // Nom du fichier JSON
     const fileName = `${safeDiscord}_${safePseudo}_${timestamp}.json`;
     const localFilePath = path.join(SANCTIONS_DIR, fileName);
 
@@ -142,28 +131,33 @@ module.exports = {
     await interaction.reply({ embeds: [confirmEmbed], ephemeral: true });
 
     const filter = msg => msg.author.id === interaction.user.id && msg.attachments.size > 0;
-    const collector = interaction.channel.createMessageCollector({ filter, time: 60000 });
+    
+    // Modification ICI : Ajout de max: 1 pour arrêter dès réception
+    const collector = interaction.channel.createMessageCollector({ filter, time: 60000, max: 1 });
 
-    collector.on('collect', async msg => {
-      for (const [, attachment] of msg.attachments) {
-        const imageURL = attachment.url;
-        const ext = path.extname(imageURL).split('?')[0];
-        const imageFileName = `${safePseudo}_${Date.now()}${ext}`;
-        const imagePath = path.join(SANCTIONS_DIR, imageFileName);
-
-        try {
-          const response = await axios.get(imageURL, { responseType: 'arraybuffer' });
-          fs.writeFileSync(imagePath, response.data);
-          values.images.push(imageFileName);
-
-          await pushFileToGitHub(imagePath, response.data);
-        } catch (error) {
-          console.error('Erreur téléchargement/push image:', error);
+    // On traite l'image à la fin du collecteur (soit temps écoulé, soit max atteint)
+    collector.on('end', async collected => {
+      // Si une image a été collectée (donc on a arrêté d'attendre)
+      if (collected.size > 0) {
+        const msg = collected.first();
+        for (const [, attachment] of msg.attachments) {
+            const imageURL = attachment.url;
+            const ext = path.extname(imageURL).split('?')[0];
+            const imageFileName = `${safePseudo}_${Date.now()}${ext}`;
+            const imagePath = path.join(SANCTIONS_DIR, imageFileName);
+    
+            try {
+              const response = await axios.get(imageURL, { responseType: 'arraybuffer' });
+              fs.writeFileSync(imagePath, response.data);
+              values.images.push(imageFileName);
+    
+              await pushFileToGitHub(imagePath, response.data);
+            } catch (error) {
+              console.error('Erreur téléchargement/push image:', error);
+            }
         }
       }
-    });
 
-    collector.on('end', async collected => {
       if (values.images.length === 0) {
         await interaction.followUp({ content: '⏱ Temps écoulé. Aucune image reçue.', ephemeral: true });
       } else {

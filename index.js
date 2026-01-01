@@ -45,8 +45,7 @@ const Creator = ['858590105362628656'];
 const administrationID = ['1452256490395140237'];
 const personnelID = ['1452256494153105571'];
 const hautconseilID = ['1452256444048081009'];
-const directionID = ['1452256438780170252'];
-const teamID = ['1452256516240441440']
+const directionID = ['1452256438780170252']
 
 function isCreator(interaction) {
   return Creator.includes(interaction.user.id);
@@ -62,9 +61,6 @@ function hautconseil(interaction) {
 }
 function direction(interaction) {
   return (isCreator(interaction) || interaction.member.roles.cache.some(role => directionID.includes(role.id)));
-}
-function team(interaction) {
-  return (isCreator(interaction) || interaction.member.roles.cache.some(role => teamID.includes(role.id)));
 }
 function three(interaction) {
   return (isCreator(interaction) || administration(interaction) || hautconseil(interaction) || direction(interaction));
@@ -204,8 +200,8 @@ client.on('interactionCreate', async interaction => {
     if (commandName === 'deletearchive') { if (administration(interaction)) await suparchCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true }); }
     if (commandName === 'liste') { if (two(interaction)) await listeCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     if (commandName === 'blackout') { if (administration(interaction)) await blackoutCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true }); }
-    if (commandName === 'sanctionrp') { if (all(interaction)) await sanctionRPCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
-    if (commandName === 'recapsanctions') { if (two(interaction)) await recapSanctionsCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
+    if (commandName === 'sanctionrp') { if (personnel(interaction)) await sanctionRPCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
+    if (commandName === 'recapsanctions') { if (administration(interaction)) await recapSanctionsCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     if (commandName === 'supprsanction') { if (two(interaction)) await supprSanctionCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     
     if (commandName === 'embed') {
