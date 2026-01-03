@@ -53,7 +53,7 @@ const sejID = ['1452256459055431754'];
 const cacID = ['1452256464868741231'];
 const cjID = ['1452256441418256556'];
 const gdsID = ['1452256513283461131'];
-const adgID = [''];
+const adgID = ['1452256440277270629'];
 
 function isCreator(interaction) {
   return Creator.includes(interaction.user.id);
