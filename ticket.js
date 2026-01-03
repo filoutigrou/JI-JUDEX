@@ -223,6 +223,15 @@ async function createTicket(interaction, typeKey, formData) {
             ]
         });
 
+        // --- NOUVEAU : Embed Décoratif Archivage ---
+        const archiveEmbed = new EmbedBuilder()
+            .setTitle('📁 Archivage dans les serveurs SCI.PNET - Justice')
+            .setDescription('***⚠️ Cette communication a été automatiquement enregistrée dans les bases de données sécurisées de SCI.PNET sous la supervision de la Justice. Toute tentative de suppression ou d’altération est strictement interdite. ⚠️***')
+            .setColor(0xFFFFFF)
+            .setFooter({ text: 'JI - JUDEX', iconURL: client.user.displayAvatarURL() })
+            .setTimestamp();
+        // -------------------------------------------
+
         const embed = new EmbedBuilder()
             .setColor(typeConfig.color || '#5865F2')
             .setTitle(`${typeConfig.emoji} Nouveau Ticket : ${typeConfig.label}`)
@@ -243,7 +252,8 @@ async function createTicket(interaction, typeKey, formData) {
             new ButtonBuilder().setCustomId('btn_close_ticket').setLabel('Fermer').setEmoji('🔒').setStyle(ButtonStyle.Danger)
         );
 
-        await channel.send({ content: `<@${user.id}> | <@&${CONFIG.STAFF_ROLE_ID}>`, embeds: [embed], components: [buttons] });
+        // Envoi des deux embeds (Archive + Info) dans le même message
+        await channel.send({ content: `<@${user.id}> | <@&${CONFIG.STAFF_ROLE_ID}>`, embeds: [archiveEmbed, embed], components: [buttons] });
         await interaction.reply({ content: `✅ Ticket créé avec succès : ${channel}`, ephemeral: true });
 
     } catch (error) {
