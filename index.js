@@ -45,7 +45,15 @@ const Creator = ['858590105362628656'];
 const administrationID = ['1452256490395140237'];
 const personnelID = ['1452256494153105571'];
 const hautconseilID = ['1452256444048081009'];
-const directionID = ['1452256438780170252']
+const directionID = ['1452256438780170252'];
+const supportID = ['1454781580118589512'];
+const colonelID = ['1452256517393744065'];
+const ltcID = ['1452256518547181610'];
+const sejID = ['1452256459055431754'];
+const cacID = ['1452256464868741231'];
+const cjID = ['1452256441418256556'];
+const gdsID = ['1452256513283461131'];
+const adgID = [''];
 
 function isCreator(interaction) {
   return Creator.includes(interaction.user.id);
@@ -62,11 +70,41 @@ function hautconseil(interaction) {
 function direction(interaction) {
   return (isCreator(interaction) || interaction.member.roles.cache.some(role => directionID.includes(role.id)));
 }
+function support(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => supportID.includes(role.id)));
+}
+function colonel(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => colonelID.includes(role.id)));
+}
+function ltc(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => ltcID.includes(role.id)));
+}
+function sej(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => sejID.includes(role.id)));
+}
+function cac(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => cacID.includes(role.id)));
+}
+function cj(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => cjID.includes(role.id)));
+}
+function gds(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => gdsID.includes(role.id)));
+}
+function adg(interaction) {
+  return (isCreator(interaction) || interaction.member.roles.cache.some(role => adgID.includes(role.id)));
+}
 function three(interaction) {
   return (isCreator(interaction) || administration(interaction) || hautconseil(interaction) || direction(interaction));
 }
-function all(interaction) {
-  return (isCreator(interaction) || direction(interaction) || delegation(interaction));
+function liste(interaction) {
+  return (isCreator(interaction) || colonel(interaction) || ltc(interaction) || sej(interaction) || cac(interaction));
+}
+function suppr(interaction) {
+  return (isCreator(interaction) || cj(interaction) || gds(interaction) || direction(interaction) || adg(interaction));
+}
+function abss(interaction) {
+  return (isCreator(interaction) || cj(interaction) || gds(interaction) || direction(interaction) || colonel(interaction) || ltc(interaction) || adg(interaction));
 }
 
 // Lancer flask.js
@@ -86,9 +124,6 @@ const commands = [
     .setDescription('Bannit un membre')
     .addUserOption(opt => opt.setName('utilisateur').setDescription('Membre').setRequired(true))
     .addStringOption(opt => opt.setName('raison').setDescription('Raison').setRequired(true)),
-  new SlashCommandBuilder()
-    .setName('deepwell')
-    .setDescription('Archivage SCI.PNET'),
   new SlashCommandBuilder()
     .setName('embed')
     .setDescription('Créer un embed via formulaire')
@@ -149,11 +184,15 @@ client.on('interactionCreate', async interaction => {
                 return interaction.reply({ content: '🚫 Seule l\'administration peut configurer les panels.', ephemeral: true });
             }
         } else if (subCommand === 'delete') {
-            if (!two(interaction)) {
-                return interaction.reply({ content: '🚫 Seule la Direction peut supprimer définitivement un ticket.', ephemeral: true });
+            if (!directeur(interaction)) {
+                return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+            }
+        } else if (subCommand === 'remove') {
+            if (!administration(interaction)) {
+                return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
             }
         } else {
-            if (!all(interaction)) {
+          if (!support(interaction)) {
                 return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
             }
         }
@@ -163,7 +202,7 @@ client.on('interactionCreate', async interaction => {
     // ----------------------------------------------
 
     if (commandName === 'kick') {
-      if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+      if (!administration(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
       const member = interaction.options.getMember('utilisateur');
       const raison = interaction.options.getString('raison');
       if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) return interaction.reply({ content: '🚫 Permission Discord manquante.', ephemeral: true });
@@ -175,7 +214,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (commandName === 'ban') {
-      if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+      if (!administration(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
       const member = interaction.options.getMember('utilisateur');
       const raison = interaction.options.getString('raison');
       if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) return interaction.reply({ content: '🚫 Permission Discord manquante.', ephemeral: true });
@@ -186,23 +225,17 @@ client.on('interactionCreate', async interaction => {
       return interaction.reply({ embeds: [embed] });
     }
 
-    if (commandName === 'deepwell') {
-      if (!all(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
-      const embed = new EmbedBuilder().setTitle('📁 Archivage dans les serveurs SCI.PNET - Justice').setDescription('***⚠️ Cette communication a été automatiquement enregistrée dans les bases de données sécurisées de SCI.PNET sous la supervision de la Justice. Toute tentative de suppression ou d’altération est strictement interdite. ⚠️***').setColor(0xFFFFFF).setFooter({ text: 'JI - JUDEX', iconURL: client.user.displayAvatarURL() }).setTimestamp();
-      return interaction.reply({ embeds: [embed] });
-    }
-
     if (commandName === 'archive') { if (three(interaction)) await archiveCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
-    if (commandName === 'recap') { if (all(interaction)) await recapCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
+    if (commandName === 'recap') { if (administration(interaction)) await recapCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
     
     // ANCIENNES COMMANDES PDS/FDS SUPPRIMEES D'ICI car remplacées par les boutons
 
     if (commandName === 'deletearchive') { if (administration(interaction)) await suparchCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true }); }
-    if (commandName === 'liste') { if (two(interaction)) await listeCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
+    if (commandName === 'liste') { if (liste(interaction)) await listeCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     if (commandName === 'blackout') { if (administration(interaction)) await blackoutCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true }); }
     if (commandName === 'sanctionrp') { if (personnel(interaction)) await sanctionRPCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
     if (commandName === 'recapsanctions') { if (administration(interaction)) await recapSanctionsCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
-    if (commandName === 'supprsanction') { if (two(interaction)) await supprSanctionCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
+    if (commandName === 'supprsanction') { if (suppr(interaction)) await supprSanctionCommand.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
     
     if (commandName === 'embed') {
       if (!administration(interaction)) return interaction.reply({ content: '🚫 Réservé Administration.', ephemeral: true });
@@ -220,7 +253,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (commandName === 'absences') { if (personnel(interaction)) await absencesCommand.execute(interaction); else interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true }); }
-    if (commandName === 'listeabs') { if (two(interaction)) await listeAbs.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
+    if (commandName === 'listeabs') { if (abss(interaction)) await listeAbs.execute(interaction); else interaction.reply({ content: '🚫 Réservé Direction+.', ephemeral: true }); }
   }
 
   // ==========================================

@@ -21,7 +21,7 @@ const {
 //              CONFIGURATION
 // ==========================================
 const CONFIG = {
-    // ID du Rôle qui a accès aux tickets (Staff)
+    // ID du Rôle qui a accès aux tickets (Staff global)
     STAFF_ROLE_ID: "1454781580118589512", 
 
     // Configuration des 3 types de tickets
@@ -103,7 +103,10 @@ const TICKET_COMMAND_DATA = new SlashCommandBuilder()
         sub.setName('delete').setDescription('Supprimer définitivement le ticket (avec sauvegarde)')
     )
     .addSubcommand(sub => 
-        sub.setName('claim').setDescription('Prendre en charge le ticket')
+        sub.setName('claim').setDescription('Prendre en charge le ticket (accès exclusif)')
+    )
+    .addSubcommand(sub => 
+        sub.setName('unclaim').setDescription('Libérer le ticket (redonne l\'accès au staff)')
     )
     .addSubcommand(sub => 
         sub.setName('add').setDescription('Ajouter un utilisateur au ticket')
@@ -115,7 +118,7 @@ const TICKET_COMMAND_DATA = new SlashCommandBuilder()
     );
 
 // ==========================================
-//           GENERATEUR HTML (Avec support Embeds)
+//           GENERATEUR HTML
 // ==========================================
 function generateHTML(messages, channelName, closerTag, ticketType) {
     const reversedMessages = Array.from(messages.values()).reverse();
@@ -125,13 +128,11 @@ function generateHTML(messages, channelName, closerTag, ticketType) {
         const date = new Date(m.createdTimestamp).toLocaleString('fr-FR');
         const avatarUrl = author.displayAvatarURL({ extension: 'png', size: 64 });
         
-        // Contenu Texte
         let contentHtml = "";
         if (m.content) {
             contentHtml = `<div class="text">${m.content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
         }
 
-        // Contenu Embeds
         let embedsHtml = "";
         if (m.embeds.length > 0) {
             embedsHtml = m.embeds.map(embed => {
@@ -144,7 +145,6 @@ function generateHTML(messages, channelName, closerTag, ticketType) {
                 
                 let descHtml = embed.description ? `<div class="embed-desc">${embed.description.replace(/\n/g, "<br>")}</div>` : '';
                 let titleHtml = embed.title ? `<div class="embed-title">${embed.title}</div>` : '';
-                
                 const colorHex = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#2f3136';
 
                 return `
@@ -156,7 +156,6 @@ function generateHTML(messages, channelName, closerTag, ticketType) {
             }).join('');
         }
         
-        // Pièces jointes
         let attachmentsHtml = "";
         if (m.attachments.size > 0) {
             attachmentsHtml = `<div class="attachments">
@@ -209,29 +208,44 @@ async function createTicket(interaction, typeKey, formData) {
     
     const channelName = `${typeKey}-${user.username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
 
+    // --- CONSTRUCTION DES PERMISSIONS ---
+    // Par défaut : @everyone (non), User (oui), Staff Global (oui), Bot (oui)
+    const permissionOverwrites = [
+        { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+        { id: user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] },
+        { id: CONFIG.STAFF_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
+        { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.ManageChannels] }
+    ];
+
+    // --- AJOUT DES RÔLES SPECIFIQUES POUR SIGNALEMENT ---
+    if (typeKey === 'signalement') {
+        const extraRoles = ["1452256459055431754", "1452256518547181610", "1452256517393744065"];
+        extraRoles.forEach(roleId => {
+            permissionOverwrites.push({
+                id: roleId,
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
+            });
+        });
+    }
+
     try {
         const channel = await guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,
             parent: typeConfig.categoryId,
             topic: `${user.id}`, 
-            permissionOverwrites: [
-                { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                { id: user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] },
-                { id: CONFIG.STAFF_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
-                { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.ManageChannels] }
-            ]
+            permissionOverwrites: permissionOverwrites
         });
 
-        // --- NOUVEAU : Embed Décoratif Archivage ---
+        // --- Embed Archivage ---
         const archiveEmbed = new EmbedBuilder()
             .setTitle('📁 Archivage dans les serveurs SCI.PNET - Justice')
             .setDescription('***⚠️ Cette communication a été automatiquement enregistrée dans les bases de données sécurisées de SCI.PNET sous la supervision de la Justice. Toute tentative de suppression ou d’altération est strictement interdite. ⚠️***')
             .setColor(0xFFFFFF)
             .setFooter({ text: 'JI - JUDEX', iconURL: client.user.displayAvatarURL() })
             .setTimestamp();
-        // -------------------------------------------
 
+        // --- Embed Info Ticket ---
         const embed = new EmbedBuilder()
             .setColor(typeConfig.color || '#5865F2')
             .setTitle(`${typeConfig.emoji} Nouveau Ticket : ${typeConfig.label}`)
@@ -252,7 +266,6 @@ async function createTicket(interaction, typeKey, formData) {
             new ButtonBuilder().setCustomId('btn_close_ticket').setLabel('Fermer').setEmoji('🔒').setStyle(ButtonStyle.Danger)
         );
 
-        // Envoi des deux embeds (Archive + Info) dans le même message
         await channel.send({ content: `<@${user.id}> | <@&${CONFIG.STAFF_ROLE_ID}>`, embeds: [archiveEmbed, embed], components: [buttons] });
         await interaction.reply({ content: `✅ Ticket créé avec succès : ${channel}`, ephemeral: true });
 
@@ -262,14 +275,91 @@ async function createTicket(interaction, typeKey, formData) {
     }
 }
 
+// Fonction de Prise en Charge (Claim) Exclusive
 async function handleClaim(interaction) {
-    if (interaction.isButton()) await interaction.deferUpdate();
-    else await interaction.reply({ content: "Prise en charge...", ephemeral: true });
+    // Si l'interaction vient d'un bouton, on doit mettre à jour le message pour enlever le bouton
+    // Si c'est une commande slash, on ne peut pas modifier le message des boutons facilement (sauf si on le cherche)
+    
+    // On commence par répondre pour éviter le timeout
+    if (interaction.isButton()) {
+        // Pas de deferUpdate tout de suite car on va utiliser update() sur le message
+    } else {
+        await interaction.deferReply();
+    }
 
     const user = interaction.user;
     const channel = interaction.channel;
-    const embed = new EmbedBuilder().setDescription(`✅ Ticket pris en charge par <@${user.id}>`).setColor('#FEE75C');
+    const creatorId = channel.topic; 
+
+    // 1. Donner la permission exclusive à celui qui claim
+    await channel.permissionOverwrites.edit(user.id, { 
+        ViewChannel: true, 
+        SendMessages: true 
+    });
+
+    // 2. Retirer la permission de parler au rôle Staff
+    await channel.permissionOverwrites.edit(CONFIG.STAFF_ROLE_ID, { 
+        ViewChannel: true,  
+        SendMessages: false 
+    });
+
+    // 3. S'assurer que le créateur peut toujours parler
+    if (creatorId) {
+        await channel.permissionOverwrites.edit(creatorId, { 
+            ViewChannel: true, 
+            SendMessages: true 
+        });
+    }
+
+    // 4. Si c'est un bouton, on met à jour le message pour retirer le bouton "Claim"
+    if (interaction.isButton() && interaction.customId === 'btn_claim_ticket') {
+        const newRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('btn_close_ticket').setLabel('Fermer').setEmoji('🔒').setStyle(ButtonStyle.Danger)
+        );
+        
+        // On récupère les embeds du message original pour ne pas les perdre
+        const originalEmbeds = interaction.message.embeds;
+        const originalContent = interaction.message.content;
+
+        await interaction.update({ 
+            content: originalContent,
+            embeds: originalEmbeds,
+            components: [newRow] // On remplace les boutons par la nouvelle ligne sans "Claim"
+        });
+    } else {
+        // Si c'était la commande /ticket claim, on répond juste
+        if (interaction.isChatInputCommand()) await interaction.editReply("Ticket pris en charge.");
+    }
+
+    const embed = new EmbedBuilder()
+        .setDescription(`✅ **Ticket pris en charge exclusivement par <@${user.id}>**.\nSeul ce membre du staff peut répondre désormais.`)
+        .setColor('#FEE75C');
+    
     await channel.send({ embeds: [embed] });
+}
+
+// Nouvelle Fonction Unclaim (Libérer le ticket)
+async function handleUnclaim(interaction) {
+    if (interaction.isButton()) await interaction.deferUpdate();
+    else await interaction.deferReply();
+
+    const channel = interaction.channel;
+    
+    // 1. Redonner la permission de parler au rôle Staff
+    await channel.permissionOverwrites.edit(CONFIG.STAFF_ROLE_ID, { 
+        ViewChannel: true, 
+        SendMessages: true 
+    });
+
+    // 2. Retirer la permission spécifique de l'utilisateur
+    await channel.permissionOverwrites.delete(interaction.user.id).catch(() => {});
+
+    const embed = new EmbedBuilder()
+        .setDescription(`🔓 **Ticket libéré par <@${interaction.user.id}>**.\nTout le staff peut à nouveau répondre.`)
+        .setColor('#5865F2');
+    
+    await channel.send({ embeds: [embed] });
+    if (interaction.isChatInputCommand()) await interaction.editReply("Ticket libéré.");
 }
 
 async function handleClose(interaction) {
@@ -388,6 +478,7 @@ module.exports = {
         }
 
         if (subCommand === 'claim') await handleClaim(interaction);
+        else if (subCommand === 'unclaim') await handleUnclaim(interaction); // Ajout UNCLAIM
         else if (subCommand === 'close') await handleClose(interaction);
         else if (subCommand === 'delete') await handleDelete(interaction);
         else if (subCommand === 'add') {
