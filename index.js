@@ -26,9 +26,10 @@ const absencesCommand = require('./abs.js');
 const listeAbs = require('./listeabs');
 const joinCommand = require('./join.js');
 const reminder = require('./reminder.js');
-const ticket = require('./ticket.js'); // Module ticket
-const serviceCommand = require('./service.js'); // NOUVEAU : Module service (pointeuse)
+const ticket = require('./ticket.js');
+const serviceCommand = require('./service.js');
 const permanenceCommand = require('./permanence.js');
+const rapportCommand = require('./rapport.js');
 
 require('dotenv').config();
 
@@ -53,7 +54,7 @@ const sejID = ['1452256459055431754'];
 const cacID = ['1452256464868741231'];
 const cjID = ['1452256441418256556'];
 const gdsID = ['1452256513283461131'];
-const adgID = [''];
+const adgID = ['1452256440277270629'];
 
 function isCreator(interaction) {
   return Creator.includes(interaction.user.id);
@@ -141,7 +142,8 @@ const commands = [
     listeAbs.data,
     ticket.data,
     serviceCommand.data,
-    permanenceCommand.data
+    permanenceCommand.data,
+    rapportCommand.data
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -165,6 +167,13 @@ client.on('interactionCreate', async interaction => {
   if (interaction.isChatInputCommand()) {
     const { commandName } = interaction;
 
+    // --- GESTION RAPPORT (NOUVEAU) ---
+    if (commandName === 'rapport') {
+        // J'ai mis permission "personnel" ici, tu peux changer si besoin (ex: all(interaction))
+        if (!personnel(interaction)) return interaction.reply({ content: '🚫 Permission refusée.', ephemeral: true });
+        await rapportCommand.execute(interaction);
+    }
+
     if (commandName === 'permanence') {
         if (!administration(interaction)) return interaction.reply({ content: '🚫 Réservé à l\'administration.', ephemeral: true });
         await permanenceCommand.execute(interaction);
@@ -181,7 +190,7 @@ client.on('interactionCreate', async interaction => {
         const subCommand = interaction.options.getSubcommand();
         if (subCommand === 'panel') {
             if (!administration(interaction)) { // Modifié pour utiliser tes fonctions
-                return interaction.reply({ content: '🚫 Seule l\'administration peut configurer les panels.', ephemeral: true });
+                return interaction.reply({ content: '🚫 Seule l\'administration.', ephemeral: true });
             }
         } else if (subCommand === 'delete') {
             if (!directeur(interaction)) {
@@ -315,6 +324,13 @@ client.on('interactionCreate', async interaction => {
   // ==========================================
   if (interaction.isModalSubmit()) {
     
+    // --- GESTION MODAL RAPPORT (NOUVEAU) ---
+    // On détecte si l'ID commence par rapport_modal_
+    if (interaction.customId.startsWith('rapport_modal_')) {
+        await rapportCommand.handleModalSubmit(interaction);
+        return;
+    }
+
     // 1. Modals Tickets
     if (interaction.customId.startsWith('modal_ticket_')) {
         await ticket.handleModals(interaction);
