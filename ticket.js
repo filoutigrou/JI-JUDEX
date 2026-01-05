@@ -21,7 +21,7 @@ const {
 //              CONFIGURATION
 // ==========================================
 const CONFIG = {
-    // ID du Rôle qui a accès aux tickets (Staff global)
+    // ID du Rôle qui a accès aux tickets (Staff)
     STAFF_ROLE_ID: "1454781580118589512", 
 
     // Configuration des 3 types de tickets
@@ -118,7 +118,7 @@ const TICKET_COMMAND_DATA = new SlashCommandBuilder()
     );
 
 // ==========================================
-//           GENERATEUR HTML
+//           GENERATEUR HTML (Avec support Embeds)
 // ==========================================
 function generateHTML(messages, channelName, closerTag, ticketType) {
     const reversedMessages = Array.from(messages.values()).reverse();
@@ -128,11 +128,13 @@ function generateHTML(messages, channelName, closerTag, ticketType) {
         const date = new Date(m.createdTimestamp).toLocaleString('fr-FR');
         const avatarUrl = author.displayAvatarURL({ extension: 'png', size: 64 });
         
+        // Contenu Texte
         let contentHtml = "";
         if (m.content) {
             contentHtml = `<div class="text">${m.content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
         }
 
+        // Contenu Embeds
         let embedsHtml = "";
         if (m.embeds.length > 0) {
             embedsHtml = m.embeds.map(embed => {
@@ -145,6 +147,7 @@ function generateHTML(messages, channelName, closerTag, ticketType) {
                 
                 let descHtml = embed.description ? `<div class="embed-desc">${embed.description.replace(/\n/g, "<br>")}</div>` : '';
                 let titleHtml = embed.title ? `<div class="embed-title">${embed.title}</div>` : '';
+                
                 const colorHex = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#2f3136';
 
                 return `
@@ -156,6 +159,7 @@ function generateHTML(messages, channelName, closerTag, ticketType) {
             }).join('');
         }
         
+        // Pièces jointes
         let attachmentsHtml = "";
         if (m.attachments.size > 0) {
             attachmentsHtml = `<div class="attachments">
@@ -219,7 +223,7 @@ async function createTicket(interaction, typeKey, formData) {
 
     // --- AJOUT DES RÔLES SPECIFIQUES POUR SIGNALEMENT ---
     if (typeKey === 'signalement') {
-        const extraRoles = ["1452256459055431754", "1452256518547181610", "1452256517393744065"];
+        const extraRoles = ["1452256459055431754", "1452256518547181610"];
         extraRoles.forEach(roleId => {
             permissionOverwrites.push({
                 id: roleId,
@@ -275,14 +279,9 @@ async function createTicket(interaction, typeKey, formData) {
     }
 }
 
-// Fonction de Prise en Charge (Claim) Exclusive
 async function handleClaim(interaction) {
-    // Si l'interaction vient d'un bouton, on doit mettre à jour le message pour enlever le bouton
-    // Si c'est une commande slash, on ne peut pas modifier le message des boutons facilement (sauf si on le cherche)
-    
-    // On commence par répondre pour éviter le timeout
     if (interaction.isButton()) {
-        // Pas de deferUpdate tout de suite car on va utiliser update() sur le message
+        // Pas de defer tout de suite car on fait un update
     } else {
         await interaction.deferReply();
     }
@@ -317,17 +316,15 @@ async function handleClaim(interaction) {
             new ButtonBuilder().setCustomId('btn_close_ticket').setLabel('Fermer').setEmoji('🔒').setStyle(ButtonStyle.Danger)
         );
         
-        // On récupère les embeds du message original pour ne pas les perdre
         const originalEmbeds = interaction.message.embeds;
         const originalContent = interaction.message.content;
 
         await interaction.update({ 
             content: originalContent,
             embeds: originalEmbeds,
-            components: [newRow] // On remplace les boutons par la nouvelle ligne sans "Claim"
+            components: [newRow] 
         });
     } else {
-        // Si c'était la commande /ticket claim, on répond juste
         if (interaction.isChatInputCommand()) await interaction.editReply("Ticket pris en charge.");
     }
 
@@ -338,20 +335,17 @@ async function handleClaim(interaction) {
     await channel.send({ embeds: [embed] });
 }
 
-// Nouvelle Fonction Unclaim (Libérer le ticket)
 async function handleUnclaim(interaction) {
     if (interaction.isButton()) await interaction.deferUpdate();
     else await interaction.deferReply();
 
     const channel = interaction.channel;
     
-    // 1. Redonner la permission de parler au rôle Staff
     await channel.permissionOverwrites.edit(CONFIG.STAFF_ROLE_ID, { 
         ViewChannel: true, 
         SendMessages: true 
     });
 
-    // 2. Retirer la permission spécifique de l'utilisateur
     await channel.permissionOverwrites.delete(interaction.user.id).catch(() => {});
 
     const embed = new EmbedBuilder()
@@ -392,10 +386,16 @@ async function handleDelete(interaction) {
 
     const channel = interaction.channel;
     const client = interaction.client;
+    
+    // DEBUG : Voir si on arrive ici
+    console.log(`[TICKET] Tentative suppression ticket: ${channel.name} (Parent: ${channel.parentId})`);
+
     await channel.send("💾 **Sauvegarde du transcript et suppression...**");
 
+    // 1. Identifier le type de ticket via la catégorie parente
     let ticketTypeKey = null;
     let categoryName = "Autre";
+    
     for (const [key, value] of Object.entries(CONFIG.TICKET_TYPES)) {
         if (channel.parentId === value.categoryId) {
             ticketTypeKey = key;
@@ -404,31 +404,49 @@ async function handleDelete(interaction) {
         }
     }
 
+    if (!ticketTypeKey) {
+        console.error(`[TICKET ERROR] Le channel ${channel.name} n'est dans aucune catégorie connue de la CONFIG.`);
+        // On continue quand même pour supprimer, mais on ne pourra pas envoyer de log
+    }
+
+    // 2. Génération du HTML
     const messages = await channel.messages.fetch({ limit: 100 });
     const htmlContent = generateHTML(messages, channel.name, interaction.user.tag, categoryName);
     const buffer = Buffer.from(htmlContent, 'utf-8');
     const attachment = new AttachmentBuilder(buffer, { name: `transcript-${channel.name}.html` });
 
-    let logChannel = null;
+    // 3. Envoi Log (FORCE FETCH)
     if (ticketTypeKey) {
         const logChannelId = CONFIG.TICKET_TYPES[ticketTypeKey].logChannelId;
-        logChannel = client.channels.cache.get(logChannelId);
-    }
-    
-    if (logChannel) {
-        const logEmbed = new EmbedBuilder()
-            .setTitle('🗑️ Ticket Supprimé')
-            .addFields(
-                { name: 'Ticket', value: channel.name, inline: true },
-                { name: 'Supprimé par', value: interaction.user.tag, inline: true },
-                { name: 'Catégorie', value: categoryName, inline: true }
-            )
-            .setColor('#000000')
-            .setTimestamp();
-        await logChannel.send({ embeds: [logEmbed], files: [attachment] });
+        
+        try {
+            // On force le fetch pour être sûr de trouver le salon même s'il n'est pas en cache
+            const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
+            
+            if (logChannel) {
+                const logEmbed = new EmbedBuilder()
+                    .setTitle('🗑️ Ticket Supprimé')
+                    .addFields(
+                        { name: 'Ticket', value: channel.name, inline: true },
+                        { name: 'Supprimé par', value: interaction.user.tag, inline: true },
+                        { name: 'Catégorie', value: categoryName, inline: true }
+                    )
+                    .setColor('#000000')
+                    .setTimestamp();
+                
+                await logChannel.send({ embeds: [logEmbed], files: [attachment] });
+                console.log(`[TICKET] Log envoyé dans ${logChannel.name}`);
+            } else {
+                console.error(`[TICKET ERROR] Impossible de trouver le salon de logs ID: ${logChannelId}`);
+            }
+        } catch (err) {
+            console.error("[TICKET ERROR] Erreur lors de l'envoi du log :", err);
+        }
     }
 
-    setTimeout(() => channel.delete().catch(() => {}), 2000);
+    // 4. Suppression
+    // Délai pour laisser le temps d'upload du fichier avant de supprimer
+    setTimeout(() => channel.delete().catch(() => {}), 4000);
 }
 
 // ==========================================
@@ -440,7 +458,6 @@ module.exports = {
     CONFIG,
     
     // 1. Gestion des Slash Commands (/ticket ...)
-    // NOTE : Les permissions sont vérifiées dans index.js avant d'appeler cette fonction
     async execute(interaction) {
         const subCommand = interaction.options.getSubcommand();
         const channel = interaction.channel;
@@ -478,7 +495,7 @@ module.exports = {
         }
 
         if (subCommand === 'claim') await handleClaim(interaction);
-        else if (subCommand === 'unclaim') await handleUnclaim(interaction); // Ajout UNCLAIM
+        else if (subCommand === 'unclaim') await handleUnclaim(interaction); 
         else if (subCommand === 'close') await handleClose(interaction);
         else if (subCommand === 'delete') await handleDelete(interaction);
         else if (subCommand === 'add') {
