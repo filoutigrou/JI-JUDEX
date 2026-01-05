@@ -14,6 +14,8 @@ const {
   TextInputStyle
 } = require('discord.js');
 const { spawn } = require('child_process');
+const fs = require('fs'); // Ajout pour lire le fichier JSON
+const path = require('path'); // Ajout pour le chemin
 const archiveCommand = require('./archive.js');
 const recapCommand = require('./recap.js');
 const suparchCommand = require('./suparch.js');
@@ -147,6 +149,49 @@ const commands = [
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
+// --- FONCTION DE SYNCHRONISATION DES ROLES SERVICE ---
+const ROLE_EN_SERVICE_ID = "1457068282237423686";
+
+async function syncServiceRoles() {
+    const jsonPath = path.join(__dirname, 'pds_fds.json');
+    if (!fs.existsSync(jsonPath)) return;
+
+    try {
+        const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+        const pdsList = data.pds || [];
+
+        // On parcourt les guildes (serveurs) du bot
+        for (const guild of client.guilds.cache.values()) {
+            const role = guild.roles.cache.get(ROLE_EN_SERVICE_ID);
+            if (!role) continue; // Si le rôle n'existe pas sur ce serveur, on passe
+
+            // On charge tous les membres pour être sûr de trouver tout le monde
+            await guild.members.fetch();
+
+            // On vérifie chaque personne dans la liste PDS du JSON
+            for (const entry of pdsList) {
+                if (entry.nom) {
+                    // On cherche le membre par son Tag (le 'nom' dans le JSON)
+                    const member = guild.members.cache.find(m => m.user.tag === entry.nom);
+                    
+                    // Si on trouve le membre et qu'il n'a pas le rôle, on lui donne
+                    if (member && !member.roles.cache.has(ROLE_EN_SERVICE_ID)) {
+                        try {
+                            await member.roles.add(role);
+                            console.log(`[SYNC] Rôle 'En Service' rendu à ${entry.nom}`);
+                        } catch (e) {
+                            console.error(`[SYNC] Erreur ajout rôle à ${entry.nom}:`, e);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Erreur sync service roles:", error);
+    }
+}
+// -----------------------------------------------------
 
 client.once('ready', async () => {
   console.log(`Connecté : ${client.user.tag}`);
