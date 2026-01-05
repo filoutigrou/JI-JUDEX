@@ -39,39 +39,36 @@ module.exports = {
 
     // Nouvelle fonction pour gérer les clics sur les boutons
     async handleButtons(interaction) {
-        // IMPORTANT: On force le rechargement du membre pour avoir ses rôles à jour
-        const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+        // 1. Récupération sécurisée du membre et du rôle
+        let member, role;
         
-        if (!member) {
-            return interaction.reply({ content: "❌ Erreur : Impossible de récupérer vos informations membre.", ephemeral: true });
+        try {
+            member = await interaction.guild.members.fetch(interaction.user.id);
+            role = await interaction.guild.roles.fetch(ROLE_EN_SERVICE_ID);
+        } catch (error) {
+            console.error(error);
+            return interaction.reply({ content: `❌ **Erreur Technique** : Impossible de récupérer le membre ou le rôle.\nCode: ${error.message}`, ephemeral: true });
         }
 
-        // On récupère le rôle sur le serveur où l'interaction a lieu
-        const role = interaction.guild.roles.cache.get(ROLE_EN_SERVICE_ID);
+        if (!role) {
+            return interaction.reply({ content: `❌ **Erreur Configuration** : Le rôle avec l'ID \`${ROLE_EN_SERVICE_ID}\` n'existe pas sur ce serveur.`, ephemeral: true });
+        }
 
-        // Gestion PRISE DE SERVICE
+        // --- PRISE DE SERVICE ---
         if (interaction.customId === 'btn_pds') {
-            // 1. Enregistrement dans le fichier (via liste.js)
             await listeCommand.ajouterPDS(interaction.user.tag);
 
-            // 2. Ajout du rôle
             let roleMsg = "";
-            if (role) {
-                try {
-                    // Vérifie si le membre a déjà le rôle pour éviter une erreur API inutile (optionnel mais propre)
-                    if (!member.roles.cache.has(role.id)) {
-                        await member.roles.add(role);
-                        roleMsg = `\n🎭 Rôle **${role.name}** ajouté.`;
-                    } else {
-                         roleMsg = `\n🎭 Vous aviez déjà le rôle **${role.name}**.`;
-                    }
-                } catch (error) {
-                    console.error(`[ERREUR PDS] Impossible d'ajouter le rôle à ${interaction.user.tag}. Code: ${error.code}, Message: ${error.message}`);
-                    roleMsg = "\n⚠️ Impossible d'ajouter le rôle (Vérifiez que le rôle du Bot est au-dessus du rôle 'En Service').";
+            try {
+                if (!member.roles.cache.has(role.id)) {
+                    await member.roles.add(role);
+                    roleMsg = `\n✅ Rôle **${role.name}** ajouté avec succès.`;
+                } else {
+                     roleMsg = `\nℹ️ Vous aviez déjà le rôle **${role.name}**.`;
                 }
-            } else {
-                console.warn(`[ERREUR PDS] Rôle ID ${ROLE_EN_SERVICE_ID} introuvable sur le serveur ${interaction.guild.name}.`);
-                roleMsg = "\n⚠️ Rôle 'En Service' introuvable (Mauvais ID dans le code).";
+            } catch (error) {
+                console.error(`[ERREUR PDS]`, error);
+                roleMsg = `\n⚠️ **ÉCHEC AJOUT RÔLE** : Je n'ai pas la permission !\n👉 Vérifiez que le rôle du Bot est placé **au-dessus** du rôle "${role.name}" dans les paramètres du serveur.`;
             }
 
             const embed = new EmbedBuilder()
@@ -83,27 +80,21 @@ module.exports = {
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        // Gestion FIN DE SERVICE
+        // --- FIN DE SERVICE ---
         if (interaction.customId === 'btn_fds') {
-            // 1. Enregistrement dans le fichier (via liste.js)
             await listeCommand.ajouterFDS(interaction.user.tag);
 
-            // 2. Retrait du rôle
             let roleMsg = "";
-            if (role) {
-                try {
-                    if (member.roles.cache.has(role.id)) {
-                        await member.roles.remove(role);
-                        roleMsg = `\n🎭 Rôle **${role.name}** retiré.`;
-                    } else {
-                        roleMsg = `\n🎭 Vous n'aviez pas le rôle **${role.name}**.`;
-                    }
-                } catch (error) {
-                    console.error(`[ERREUR FDS] Impossible de retirer le rôle à ${interaction.user.tag}. Code: ${error.code}, Message: ${error.message}`);
-                    roleMsg = "\n⚠️ Impossible de retirer le rôle (Vérifiez la hiérarchie des rôles du bot).";
+            try {
+                if (member.roles.cache.has(role.id)) {
+                    await member.roles.remove(role);
+                    roleMsg = `\n✅ Rôle **${role.name}** retiré avec succès.`;
+                } else {
+                    roleMsg = `\nℹ️ Vous n'aviez pas le rôle **${role.name}**.`;
                 }
-            } else {
-                 console.warn(`[ERREUR FDS] Rôle ID ${ROLE_EN_SERVICE_ID} introuvable.`);
+            } catch (error) {
+                console.error(`[ERREUR FDS]`, error);
+                roleMsg = `\n⚠️ **ÉCHEC RETRAIT RÔLE** : Je n'ai pas la permission !\n👉 Vérifiez que le rôle du Bot est placé **au-dessus** du rôle "${role.name}" dans les paramètres du serveur.`;
             }
 
             const embed = new EmbedBuilder()
