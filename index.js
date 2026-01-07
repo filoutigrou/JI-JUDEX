@@ -151,7 +151,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 client.once('ready', async () => {
   console.log(`Connecté : ${client.user.tag}`);
   try {
-    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+    await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, '1452256093421043726'), { body: commands });
     console.log('Commandes slash enregistrées.');
   } catch (err) {
     console.error('Erreur commandes slash :', err);
