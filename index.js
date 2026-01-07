@@ -63,7 +63,7 @@ function administration(interaction) {
   return (isCreator(interaction) || interaction.member.roles.cache.some(role => administrationID.includes(role.id)));
 }
 function personnel(interaction) {
-  return (isCreator(interaction) || interaction.member.roles.cache.some(role => personnelID.includes(role.id)));
+  return (interaction.member.roles.cache.some(role => personnelID.includes(role.id)));
 }
 function hautconseil(interaction) {
   return (isCreator(interaction) || interaction.member.roles.cache.some(role => hautconseilID.includes(role.id)));
