@@ -151,8 +151,17 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 client.once('ready', async () => {
   console.log(`Connecté : ${client.user.tag}`);
   try {
-    await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, '1452256093421043726'), { body: commands });
-    console.log('Commandes slash enregistrées.');
+    // ÉTAPE A : Supprimer les anciennes commandes globales (ce qui enlève les doublons)
+    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+    console.log('Anciennes commandes globales supprimées.');
+
+    // ÉTAPE B : Enregistrer tes commandes sur ton serveur spécifique
+    await rest.put(
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, '1452256093421043726'), 
+      { body: commands }
+    );
+    console.log('Commandes slash du serveur enregistrées.');
+
   } catch (err) {
     console.error('Erreur commandes slash :', err);
   }
